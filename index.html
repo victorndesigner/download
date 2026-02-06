@@ -130,8 +130,25 @@
 
     <script>
         // CONFIGURAÇÃO
-        const API_URL = 'http://localhost:3000/api'; // <--- INSIRA SUA URL DA DISCLOUD AQUI
-        const params = new URLSearchParams(window.location.search);
+        const API_URL = 'http://localhost:3000/api';
+
+        // Função para tentar recuperar parâmetros (Query ou Hash)
+        function getParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+
+            // Se achou query params, retorna
+            if (urlParams.has('hwid')) return urlParams;
+
+            // Se não, tenta pegar do hash (ex: /#type=texture&id=...)
+            if (window.location.hash) {
+                const hash = window.location.hash.substring(1); // Remove o #
+                return new URLSearchParams(hash);
+            }
+
+            return new URLSearchParams(); // Vazio
+        }
+
+        const params = getParams();
 
         // Elementos
         const title = document.getElementById('title');
