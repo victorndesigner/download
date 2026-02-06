@@ -180,20 +180,46 @@
             }
 
             if (!hwid || !textureId) {
-                showError('Parâmetros de download ausentes. O encurtador pode ter removido os dados.');
-                return;
+                console.warn('Params ausentes. Tentando fallback por IP...');
+                // Tenta confirmar por IP
+                try {
+                    status.innerText = 'Buscando sessão...';
+                    const res = await fetch(`${API_URL}/download/confirm?ip_check=true`);
+                    const data = await res.json();
+
+                    if (data.success) {
+                        finishSuccess();
+                        return;
+                    } else {
+                        // Se falhar o IP, aí sim mostra erro
+                        showError('Parâmetros ausentes e sessão não encontrada.');
+                        return;
+                    }
+                } catch (e) {
+                    showError('Erro ao buscar sessão por IP.');
+                    return;
+                }
             }
 
             // Anti-F5
             const requestKey = `bolt_dl_${textureId}_${hwid}`;
             if (localStorage.getItem('bolt_last_dl_request') === requestKey) {
-                // Permitir re-tentativa, mas avisar no console
                 console.warn('Requisição repetida detectada.');
             }
             localStorage.setItem('bolt_last_dl_request', requestKey);
             window.history.replaceState({}, document.title, window.location.pathname);
 
             handleRelease(hwid, textureId);
+        }
+
+        function finishSuccess() {
+            mainLogo.style.display = 'none';
+            successIcon.style.display = 'block';
+            loadingArea.style.display = 'none';
+            title.innerText = 'Download Pronto!';
+            desc.innerText = 'Seu download iniciará no App automaticamente.';
+            actionBtn.style.display = 'block';
+            actionBtn.onclick = () => window.close();
         }
 
         async function handleRelease(hwid, textureId) {
@@ -203,13 +229,7 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    mainLogo.style.display = 'none';
-                    successIcon.style.display = 'block';
-                    loadingArea.style.display = 'none';
-                    title.innerText = 'Download Pronto!';
-                    desc.innerText = 'Seu download iniciará no App automaticamente.';
-                    actionBtn.style.display = 'block';
-                    actionBtn.onclick = () => window.close();
+                    finishSuccess();
                 } else {
                     showError('O servidor recusou a liberação.');
                 }
