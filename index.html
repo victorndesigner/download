@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liberação de Download - bolttexturas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        :root {
+            --bg: #0a0a0a;
+            --card: #141414;
+            --accent: #c773ff;
+            --text: #ffffff;
+            --text-muted: #888888;
+            --success: #00ff88;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .container {
+            background: var(--card);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid #333;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo {
+            font-size: 50px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .loader {
+            border: 3px solid #333;
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        #status {
+            font-size: 14px;
+            color: var(--accent);
+            margin-top: 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .success-icon {
+            font-size: 50px;
+            color: var(--success);
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .main-btn {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.3s;
+            display: none;
+            margin-top: 20px;
+        }
+
+        .main-btn:hover {
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo" id="main-logo">💜</div>
+        <div class="success-icon" id="success-icon"><i class="fas fa-check-circle"></i></div>
+        <h1 id="title">Verificando...</h1>
+        <p id="desc">Validando seu acesso ao download.</p>
+        <div id="loading-area">
+            <div class="loader"></div>
+            <div id="status">Conectando ao App...</div>
+        </div>
+        <button class="main-btn" id="action-btn">Fechar Página</button>
+    </div>
+
+    <script>
+        // CONFIGURAÇÃO
+        const API_URL = 'http://localhost:3000/api'; // <--- INSIRA SUA URL DA DISCLOUD AQUI
+        const params = new URLSearchParams(window.location.search);
+
+        // Elementos
+        const title = document.getElementById('title');
+        const desc = document.getElementById('desc');
+        const status = document.getElementById('status');
+        const loadingArea = document.getElementById('loading-area');
+        const successIcon = document.getElementById('success-icon');
+        const mainLogo = document.getElementById('main-logo');
+        const actionBtn = document.getElementById('action-btn');
+
+        async function init() {
+            const referrer = document.referrer.toLowerCase();
+            const token = params.get('token');
+            const hwid = params.get('hwid');
+            const textureId = params.get('id');
+
+            console.log('--- Bolt Texturas Download ---');
+
+            await new Promise(r => setTimeout(r, 1000));
+
+            // Segurança Básica
+            const validDomains = ['sannerurl', 'caminhodesperto', 'bolttexturas', 'encurtador'];
+            const referrerValid = validDomains.some(d => referrer.indexOf(d) !== -1);
+            const tokenValid = token === 'bolt_2026_acesso';
+
+            if (!referrerValid && !tokenValid) {
+                showError('Acesso direto não permitido. Use o link do Aplicativo.');
+                return;
+            }
+
+            if (!hwid || !textureId) {
+                showError('Parâmetros de download ausentes. O encurtador pode ter removido os dados.');
+                return;
+            }
+
+            // Anti-F5
+            const requestKey = `bolt_dl_${textureId}_${hwid}`;
+            if (localStorage.getItem('bolt_last_dl_request') === requestKey) {
+                // Permitir re-tentativa, mas avisar no console
+                console.warn('Requisição repetida detectada.');
+            }
+            localStorage.setItem('bolt_last_dl_request', requestKey);
+            window.history.replaceState({}, document.title, window.location.pathname);
+
+            handleRelease(hwid, textureId);
+        }
+
+        async function handleRelease(hwid, textureId) {
+            try {
+                status.innerText = 'Liberando no App...';
+                const res = await fetch(`${API_URL}/download/confirm?hwid=${hwid}&textureId=${textureId}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    mainLogo.style.display = 'none';
+                    successIcon.style.display = 'block';
+                    loadingArea.style.display = 'none';
+                    title.innerText = 'Download Pronto!';
+                    desc.innerText = 'Seu download iniciará no App automaticamente.';
+                    actionBtn.style.display = 'block';
+                    actionBtn.onclick = () => window.close();
+                } else {
+                    showError('O servidor recusou a liberação.');
+                }
+            } catch (e) {
+                showError('Erro ao comunicar com o servidor.');
+            }
+        }
+
+        function showError(msg) {
+            loadingArea.innerHTML = `<div style="color: #ff4d4d; font-weight: 700; white-space: pre-wrap;">❌ ${msg}</div>`;
+            title.innerText = 'Falha no Download';
+            desc.innerText = 'Não foi possível liberar o arquivo.';
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
