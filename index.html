@@ -219,7 +219,12 @@
             title.innerText = 'Download Pronto!';
             desc.innerText = 'Seu download iniciará no App automaticamente.';
             actionBtn.style.display = 'block';
-            actionBtn.onclick = () => window.close();
+            actionBtn.onclick = () => {
+                actionBtn.innerText = 'Pode fechar esta aba';
+                actionBtn.style.background = '#333';
+                actionBtn.disabled = true;
+                window.close(); // Tenta fechar (se permitido)
+            };
         }
 
         async function handleRelease(hwid, textureId) {
