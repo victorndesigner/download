@@ -145,6 +145,15 @@
     </div>
 
     <script>
+        // Bloqueio Básico de Inspeção e Cópia
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (e.ctrlKey && (e.key === 'u' || e.key === 's' || e.key === 'p')) e.preventDefault();
+            if (e.key === 'F12') e.preventDefault();
+        });
+        document.addEventListener('dragstart', e => e.preventDefault());
+    </script>
+    <script>
         // CONFIGURAÇÃO
         const API_URL = 'http://localhost:3000/api';
 
