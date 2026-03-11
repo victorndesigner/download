@@ -245,6 +245,21 @@
             }
         }
 
+        function finishSuccess() {
+            mainLogo.style.display = 'none';
+            successIcon.style.display = 'block';
+            loadingArea.style.display = 'none';
+            title.innerText = 'Download Pronto!';
+            desc.innerText = 'Seu download iniciará no App automaticamente.';
+            actionBtn.style.display = 'block';
+            actionBtn.onclick = () => {
+                actionBtn.innerText = 'Pode fechar esta aba';
+                actionBtn.style.background = '#333';
+                actionBtn.disabled = true;
+                window.close(); // Tenta fechar (se permitido)
+            };
+        }
+
         function showError(msg) {
             const debugInfo = `\n\nURL: ${window.location.href}\nParams: ${params.toString() || 'Nenhum'}`;
             console.error('Erro:', msg, debugInfo);
