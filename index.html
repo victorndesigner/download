@@ -233,10 +233,14 @@
 
                 if (data.success) {
                     localStorage.setItem(`bolt_dl_done_${token}`, 'true');
-                    localStorage.removeItem('bolt_dl_token'); // Limpa credenciais temporárias
+                    // Limpeza imediata para evitar que re-usem a sessão persistente
+                    localStorage.removeItem('bolt_dl_token');
                     localStorage.removeItem('bolt_dl_hwid');
                     finishSuccess();
                 } else {
+                    // Se o servidor deu erro, o token não é mais válido no banco
+                    localStorage.removeItem('bolt_dl_token');
+                    localStorage.removeItem('bolt_dl_hwid');
                     showError(data.error || 'Ticket inválido ou já utilizado.');
                 }
             } catch (e) {
