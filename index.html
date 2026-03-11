@@ -213,12 +213,12 @@
                 // SEGURANÇA: Anti-Burla de "Aba Antiga do Linkvertise"
                 if (tokenTime > 0) {
                     const elapsed = pageLoadTime - tokenTime;
-                    // Mínimo de 15 segundos: Tempo obrigatório do encurtador
-                    if (elapsed < 15000) {
+                    // Mínimo de 30 segundos: Tempo obrigatório do encurtador
+                    if (elapsed < 30000) {
                         localStorage.removeItem('bolt_dl_token');
                         localStorage.removeItem('bolt_dl_hwid');
                         localStorage.removeItem('bolt_dl_ts');
-                        showError('🔴 BURLA DETECTADA!\n\nVocê pular de etapa muito rápido usando uma janela antiga.\n\nSeu ticket foi DESTRUÍDO. Inicie novamente.');
+                        showError('🔴 BURLA DETECTADA!\n\nVocê tentou pular etapas usando uma janela antiga.\n\nSeu ticket foi DESTRUÍDO. Inicie novamente.');
                         return;
                     }
                 }
