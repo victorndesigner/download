@@ -193,6 +193,13 @@
 
             // --- MODO BRIDGE: Se vem do App com 'go', salva e redireciona ---
             if (token && hwid && goUrl) {
+                // Ao entrar em modo bridge, limpamos qualquer "sucesso" anterior do navegador
+                // para garantir que esta nova tentativa seja validada do zero.
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key.startsWith('bolt_dl_done_')) localStorage.removeItem(key);
+                }
+                
                 localStorage.setItem('bolt_dl_token', token);
                 localStorage.setItem('bolt_dl_hwid', hwid);
                 console.log('Bridge: Salvando credenciais e redirecionando...');
@@ -200,7 +207,7 @@
                 return;
             }
 
-            // --- RECOVERY: Se não tem params, tenta pegar do localStorage ---
+            // --- RECOVERY: Se não tem params (voltou do encurtador), tenta pegar do localStorage ---
             if (!token || !hwid) {
                 token = localStorage.getItem('bolt_dl_token');
                 hwid = localStorage.getItem('bolt_dl_hwid');
@@ -209,19 +216,12 @@
             await new Promise(r => setTimeout(r, 1000));
 
             if (!token || !hwid) {
-                showError('Parâmetros ausentes. Use o link do Aplicativo.');
+                showError('Parâmetros ausentes ou sessão expirada. Inicie o download novamente pelo Aplicativo.');
                 return;
             }
 
-            // Anti-F5: Salva o token usado localmente para marcar como "concluído" nesta aba
-            const requestKey = `bolt_dl_done_${token}`;
-            if (localStorage.getItem(requestKey)) {
-                localStorage.removeItem('bolt_dl_token'); // Limpa após uso
-                localStorage.removeItem('bolt_dl_hwid');
-                finishSuccess();
-                return;
-            }
-
+            // O sistema agora sempre validará com o servidor. 
+            // Não usamos mais o check de localStorage aqui para evitar burlas de "Open" antigo.
             handleRelease(token, hwid);
         }
 
