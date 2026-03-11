@@ -193,35 +193,31 @@
 
             // --- MODO BRIDGE: Se vem do App com 'go', salva e redireciona ---
             if (token && hwid && goUrl) {
-                // Ao entrar em modo bridge, limpamos qualquer "sucesso" anterior do navegador
-                // para garantir que esta nova tentativa seja validada do zero.
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key.startsWith('bolt_dl_done_')) localStorage.removeItem(key);
-                }
+                // Segurança: Limpamos localStorageLegado e marcamos esta SESSÃO de aba
+                localStorage.removeItem('bolt_dl_token');
+                localStorage.removeItem('bolt_dl_hwid');
                 
-                localStorage.setItem('bolt_dl_token', token);
-                localStorage.setItem('bolt_dl_hwid', hwid);
-                console.log('Bridge: Salvando credenciais e redirecionando...');
+                sessionStorage.setItem('bolt_dl_token', token);
+                sessionStorage.setItem('bolt_dl_hwid', hwid);
+                
+                console.log('Bridge: Salvando credenciais na sessão da aba e redirecionando...');
                 window.location.replace(decodeURIComponent(goUrl));
                 return;
             }
 
-            // --- RECOVERY: Se não tem params (voltou do encurtador), tenta pegar do localStorage ---
+            // --- RECOVERY: Tenta pegar apenas da SESSÃO desta aba ---
             if (!token || !hwid) {
-                token = localStorage.getItem('bolt_dl_token');
-                hwid = localStorage.getItem('bolt_dl_hwid');
+                token = sessionStorage.getItem('bolt_dl_token');
+                hwid = sessionStorage.getItem('bolt_dl_hwid');
             }
 
             await new Promise(r => setTimeout(r, 1000));
 
             if (!token || !hwid) {
-                showError('Parâmetros ausentes ou sessão expirada. Inicie o download novamente pelo Aplicativo.');
+                showError('Sessão expirada ou inválida. Por favor, reinicie o download pelo Aplicativo para gerar um novo ticket.');
                 return;
             }
 
-            // O sistema agora sempre validará com o servidor. 
-            // Não usamos mais o check de localStorage aqui para evitar burlas de "Open" antigo.
             handleRelease(token, hwid);
         }
 
@@ -232,16 +228,14 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    localStorage.setItem(`bolt_dl_done_${token}`, 'true');
-                    // Limpeza imediata para evitar que re-usem a sessão persistente
-                    localStorage.removeItem('bolt_dl_token');
-                    localStorage.removeItem('bolt_dl_hwid');
+                    // Limpeza imediata para evitar reuso na mesma aba
+                    sessionStorage.removeItem('bolt_dl_token');
+                    sessionStorage.removeItem('bolt_dl_hwid');
                     finishSuccess();
                 } else {
-                    // Se o servidor deu erro, o token não é mais válido no banco
-                    localStorage.removeItem('bolt_dl_token');
-                    localStorage.removeItem('bolt_dl_hwid');
-                    showError(data.error || 'Ticket inválido ou já utilizado.');
+                    sessionStorage.removeItem('bolt_dl_token');
+                    sessionStorage.removeItem('bolt_dl_hwid');
+                    showError(data.error || 'Este ticket já foi consumido.');
                 }
             } catch (e) {
                 console.error('Fetch error:', e);
