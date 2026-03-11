@@ -184,37 +184,52 @@
         const mainLogo = document.getElementById('main-logo');
         const actionBtn = document.getElementById('action-btn');
 
+        const pageLoadTime = Date.now();
+
         async function init() {
             let token = params.get('token');
             let hwid = params.get('hwid');
-            const goUrl = params.get('go'); // Parâmetro para modo bridge
+            const goUrl = params.get('go');
 
             console.log('--- Bolt Texturas Download ---');
 
-            // --- MODO BRIDGE: Se vem do App com 'go', salva e redireciona ---
+            // --- MODO BRIDGE: Salva token e redireciona ---
             if (token && hwid && goUrl) {
-                // Segurança: Limpamos localStorageLegado e marcamos esta SESSÃO de aba
-                localStorage.removeItem('bolt_dl_token');
-                localStorage.removeItem('bolt_dl_hwid');
+                localStorage.setItem('bolt_dl_token', token);
+                localStorage.setItem('bolt_dl_hwid', hwid);
+                localStorage.setItem('bolt_dl_ts', Date.now().toString());
                 
-                sessionStorage.setItem('bolt_dl_token', token);
-                sessionStorage.setItem('bolt_dl_hwid', hwid);
-                
-                console.log('Bridge: Salvando credenciais na sessão da aba e redirecionando...');
+                console.log('Bridge: Credenciais salvas. Indo para o encurtador...');
                 window.location.replace(decodeURIComponent(goUrl));
                 return;
             }
 
-            // --- RECOVERY: Tenta pegar apenas da SESSÃO desta aba ---
+            // --- RECOVERY: Tenta pegar do LocalStorage ---
             if (!token || !hwid) {
-                token = sessionStorage.getItem('bolt_dl_token');
-                hwid = sessionStorage.getItem('bolt_dl_hwid');
+                token = localStorage.getItem('bolt_dl_token');
+                hwid = localStorage.getItem('bolt_dl_hwid');
+                const tokenTime = Number(localStorage.getItem('bolt_dl_ts') || 0);
+
+                // SEGURANÇA: Anti-Burla de "Aba Antiga do Linkvertise"
+                // Se a página de download carregar muito rápido após o token ser criado, 
+                // significa que o usuário usou um botão "Open" antigo.
+                if (tokenTime > 0) {
+                    const elapsed = pageLoadTime - tokenTime;
+                    // Mínimo de 8 segundos para passar pelo encurtador
+                    if (elapsed < 8000) {
+                        localStorage.removeItem('bolt_dl_token');
+                        localStorage.removeItem('bolt_dl_hwid');
+                        localStorage.removeItem('bolt_dl_ts');
+                        showError('🔴 BURLA DETECTADA!\n\nVocê tentou pular o encurtador usando uma janela antiga.\n\nSeu ticket foi DESTRUÍDO. Inicie novamente.');
+                        return;
+                    }
+                }
             }
 
             await new Promise(r => setTimeout(r, 1000));
 
             if (!token || !hwid) {
-                showError('Sessão expirada ou inválida. Por favor, reinicie o download pelo Aplicativo para gerar um novo ticket.');
+                showError('Sessão expirada ou não encontrada. Inicie o download pelo Aplicativo.');
                 return;
             }
 
@@ -228,13 +243,15 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    // Limpeza imediata para evitar reuso na mesma aba
-                    sessionStorage.removeItem('bolt_dl_token');
-                    sessionStorage.removeItem('bolt_dl_hwid');
+                    // Limpeza para evitar reuso
+                    localStorage.removeItem('bolt_dl_token');
+                    localStorage.removeItem('bolt_dl_hwid');
+                    localStorage.removeItem('bolt_dl_ts');
                     finishSuccess();
                 } else {
-                    sessionStorage.removeItem('bolt_dl_token');
-                    sessionStorage.removeItem('bolt_dl_hwid');
+                    localStorage.removeItem('bolt_dl_token');
+                    localStorage.removeItem('bolt_dl_hwid');
+                    localStorage.removeItem('bolt_dl_ts');
                     showError(data.error || 'Este ticket já foi consumido.');
                 }
             } catch (e) {
