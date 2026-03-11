@@ -240,7 +240,8 @@
                     showError(data.error || 'Ticket inválido ou já utilizado.');
                 }
             } catch (e) {
-                showError('Erro ao comunicar com o servidor.');
+                console.error('Fetch error:', e);
+                showError(`Erro ao comunicar com o servidor: ${e.message}`);
             }
         }
 
