@@ -185,83 +185,39 @@
         const actionBtn = document.getElementById('action-btn');
 
         async function init() {
-            const referrer = document.referrer.toLowerCase();
             const token = params.get('token');
             const hwid = params.get('hwid');
-            const textureId = params.get('id');
 
             console.log('--- Bolt Texturas Download ---');
 
             await new Promise(r => setTimeout(r, 1000));
 
-            // Segurança Básica
-            const validDomains = ['sannerurl', 'caminhodesperto', 'bolttexturas', 'encurtador'];
-            const referrerValid = validDomains.some(d => referrer.indexOf(d) !== -1);
-            const tokenValid = token === 'bolt_2026_acesso';
-
-            if (!referrerValid && !tokenValid) {
-                showError('Acesso direto não permitido. Use o link do Aplicativo.');
+            if (!token || !hwid) {
+                showError('Parâmetros ausentes. Use o link do Aplicativo.');
                 return;
             }
 
-            if (!hwid || !textureId) {
-                console.warn('Params ausentes. Tentando fallback por IP...');
-                // Tenta confirmar por IP
-                try {
-                    status.innerText = 'Buscando sessão...';
-                    const res = await fetch(`${API_URL}/download/confirm?ip_check=true`);
-                    const data = await res.json();
-
-                    if (data.success) {
-                        finishSuccess();
-                        return;
-                    } else {
-                        // Se falhar o IP, aí sim mostra erro
-                        showError('Parâmetros ausentes e sessão não encontrada.');
-                        return;
-                    }
-                } catch (e) {
-                    showError('Erro ao buscar sessão por IP.');
-                    return;
-                }
+            // Anti-F5: Salva o token usado localmente para marcar como "concluído" nesta aba
+            const requestKey = `bolt_dl_done_${token}`;
+            if (localStorage.getItem(requestKey)) {
+                finishSuccess();
+                return;
             }
 
-            // Anti-F5
-            const requestKey = `bolt_dl_${textureId}_${hwid}`;
-            if (localStorage.getItem('bolt_last_dl_request') === requestKey) {
-                console.warn('Requisição repetida detectada.');
-            }
-            localStorage.setItem('bolt_last_dl_request', requestKey);
-            window.history.replaceState({}, document.title, window.location.pathname);
-
-            handleRelease(hwid, textureId);
+            handleRelease(token, hwid);
         }
 
-        function finishSuccess() {
-            mainLogo.style.display = 'none';
-            successIcon.style.display = 'block';
-            loadingArea.style.display = 'none';
-            title.innerText = 'Download Pronto!';
-            desc.innerText = 'Seu download iniciará no App automaticamente.';
-            actionBtn.style.display = 'block';
-            actionBtn.onclick = () => {
-                actionBtn.innerText = 'Pode fechar esta aba';
-                actionBtn.style.background = '#333';
-                actionBtn.disabled = true;
-                window.close(); // Tenta fechar (se permitido)
-            };
-        }
-
-        async function handleRelease(hwid, textureId) {
+        async function handleRelease(token, hwid) {
             try {
-                status.innerText = 'Liberando no App...';
-                const res = await fetch(`${API_URL}/download/confirm?hwid=${hwid}&textureId=${textureId}`);
+                status.innerText = 'Validando ticket...';
+                const res = await fetch(`${API_URL}/api/verify-download?token=${token}&hwid=${hwid}`);
                 const data = await res.json();
 
                 if (data.success) {
+                    localStorage.setItem(`bolt_dl_done_${token}`, 'true');
                     finishSuccess();
                 } else {
-                    showError('O servidor recusou a liberação.');
+                    showError(data.error || 'Ticket inválido ou já utilizado.');
                 }
             } catch (e) {
                 showError('Erro ao comunicar com o servidor.');
