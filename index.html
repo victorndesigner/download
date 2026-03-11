@@ -185,10 +185,26 @@
         const actionBtn = document.getElementById('action-btn');
 
         async function init() {
-            const token = params.get('token');
-            const hwid = params.get('hwid');
+            let token = params.get('token');
+            let hwid = params.get('hwid');
+            const goUrl = params.get('go'); // Parâmetro para modo bridge
 
             console.log('--- Bolt Texturas Download ---');
+
+            // --- MODO BRIDGE: Se vem do App com 'go', salva e redireciona ---
+            if (token && hwid && goUrl) {
+                localStorage.setItem('bolt_dl_token', token);
+                localStorage.setItem('bolt_dl_hwid', hwid);
+                console.log('Bridge: Salvando credenciais e redirecionando...');
+                window.location.replace(decodeURIComponent(goUrl));
+                return;
+            }
+
+            // --- RECOVERY: Se não tem params, tenta pegar do localStorage ---
+            if (!token || !hwid) {
+                token = localStorage.getItem('bolt_dl_token');
+                hwid = localStorage.getItem('bolt_dl_hwid');
+            }
 
             await new Promise(r => setTimeout(r, 1000));
 
@@ -200,6 +216,8 @@
             // Anti-F5: Salva o token usado localmente para marcar como "concluído" nesta aba
             const requestKey = `bolt_dl_done_${token}`;
             if (localStorage.getItem(requestKey)) {
+                localStorage.removeItem('bolt_dl_token'); // Limpa após uso
+                localStorage.removeItem('bolt_dl_hwid');
                 finishSuccess();
                 return;
             }
@@ -215,6 +233,8 @@
 
                 if (data.success) {
                     localStorage.setItem(`bolt_dl_done_${token}`, 'true');
+                    localStorage.removeItem('bolt_dl_token'); // Limpa credenciais temporárias
+                    localStorage.removeItem('bolt_dl_hwid');
                     finishSuccess();
                 } else {
                     showError(data.error || 'Ticket inválido ou já utilizado.');
