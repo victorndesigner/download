@@ -214,7 +214,7 @@
                 if (tokenTime > 0) {
                     const elapsed = pageLoadTime - tokenTime;
                     // Mínimo de 30 segundos: Tempo obrigatório do encurtador
-                    if (elapsed < 30000) {
+                    if (elapsed < 5000) {
                         localStorage.removeItem('bolt_dl_token');
                         localStorage.removeItem('bolt_dl_hwid');
                         localStorage.removeItem('bolt_dl_ts');
