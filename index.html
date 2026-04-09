@@ -155,7 +155,7 @@
     </script>
     <script>
         // CONFIGURAÇÃO
-        const API_URL = 'https://texturasbolt.onrender.com';
+        const API_URL = 'https://api-texture.vertraweb.app/';
 
         // Função para tentar recuperar parâmetros (Query ou Hash)
         function getParams() {
@@ -198,7 +198,7 @@
                 localStorage.setItem('bolt_dl_token', token);
                 localStorage.setItem('bolt_dl_hwid', hwid);
                 localStorage.setItem('bolt_dl_ts', Date.now().toString());
-                
+
                 console.log('Bridge: Credenciais salvas. Indo para o encurtador...');
                 window.location.replace(decodeURIComponent(goUrl));
                 return;
