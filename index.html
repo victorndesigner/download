@@ -155,25 +155,15 @@
     </script>
     <script>
         // CONFIGURAÇÃO
-        const API_URL = 'https://api-texture.vertraweb.app/';
+        const API_URL = 'https://api-texture.vertraweb.app';
 
-        // Função para tentar recuperar parâmetros (Query ou Hash)
-        function getParams() {
-            const urlParams = new URLSearchParams(window.location.search);
-
-            // Se achou query params, retorna
-            if (urlParams.has('hwid')) return urlParams;
-
-            // Se não, tenta pegar do hash (ex: /#type=texture&id=...)
-            if (window.location.hash) {
-                const hash = window.location.hash.substring(1); // Remove o #
-                return new URLSearchParams(hash);
-            }
-
-            return new URLSearchParams(); // Vazio
+        // Lê params da URL (suporta query string e hash)
+        function getParam(name) {
+            const qs = new URLSearchParams(window.location.search);
+            if (qs.has(name)) return qs.get(name);
+            const hash = new URLSearchParams(window.location.hash.substring(1));
+            return hash.get(name) || null;
         }
-
-        const params = getParams();
 
         // Elementos
         const title = document.getElementById('title');
@@ -187,70 +177,34 @@
         const pageLoadTime = Date.now();
 
         async function init() {
-            let token = params.get('token');
-            let hwid = params.get('hwid');
-            const goUrl = params.get('go');
+            const hwid = getParam('hwid');
+            const textureId = getParam('textureId');
 
             console.log('--- Bolt Texturas Download ---');
+            console.log('HWID:', hwid, '| TextureID:', textureId);
 
-            // --- MODO BRIDGE: Salva token e redireciona ---
-            if (token && hwid && goUrl) {
-                localStorage.setItem('bolt_dl_token', token);
-                localStorage.setItem('bolt_dl_hwid', hwid);
-                localStorage.setItem('bolt_dl_ts', Date.now().toString());
-
-                console.log('Bridge: Credenciais salvas. Indo para o encurtador...');
-                window.location.replace(decodeURIComponent(goUrl));
+            // Sem parâmetros = acesso direto sem passar pelo App
+            if (!hwid || !textureId) {
+                showError('Sessão inválida.\n\nInicie o download diretamente pelo Aplicativo Bolt Texturas.');
                 return;
             }
 
-            // --- RECOVERY: Tenta pegar do LocalStorage ---
-            if (!token || !hwid) {
-                token = localStorage.getItem('bolt_dl_token');
-                hwid = localStorage.getItem('bolt_dl_hwid');
-                const tokenTime = Number(localStorage.getItem('bolt_dl_ts') || 0);
+            // Anti-burla: deve ter ficado pelo menos 10s na página do encurtador
+            await new Promise(r => setTimeout(r, 1500));
 
-                // SEGURANÇA: Anti-Burla de "Aba Antiga do Linkvertise"
-                if (tokenTime > 0) {
-                    const elapsed = pageLoadTime - tokenTime;
-                    // Mínimo de 30 segundos: Tempo obrigatório do encurtador
-                    if (elapsed < 5000) {
-                        localStorage.removeItem('bolt_dl_token');
-                        localStorage.removeItem('bolt_dl_hwid');
-                        localStorage.removeItem('bolt_dl_ts');
-                        showError('🔴 BURLA DETECTADA!\n\nVocê tentou pular etapas usando uma janela antiga.\n\nSeu ticket foi DESTRUÍDO. Inicie novamente.');
-                        return;
-                    }
-                }
-            }
-
-            await new Promise(r => setTimeout(r, 1000));
-
-            if (!token || !hwid) {
-                showError('Sessão expirada ou não encontrada. Inicie o download pelo Aplicativo.');
-                return;
-            }
-
-            handleRelease(token, hwid);
+            await handleConfirm(hwid, textureId);
         }
 
-        async function handleRelease(token, hwid) {
+        async function handleConfirm(hwid, textureId) {
             try {
-                status.innerText = 'Validando ticket...';
-                const res = await fetch(`${API_URL}/api/verify-download?token=${token}&hwid=${hwid}`);
+                status.innerText = 'Confirmando validação...';
+                const res = await fetch(`${API_URL}/api/download/confirm?hwid=${encodeURIComponent(hwid)}&textureId=${encodeURIComponent(textureId)}`);
                 const data = await res.json();
 
-                if (data.success) {
-                    // Limpeza para evitar reuso
-                    localStorage.removeItem('bolt_dl_token');
-                    localStorage.removeItem('bolt_dl_hwid');
-                    localStorage.removeItem('bolt_dl_ts');
+                if (res.ok && data.success) {
                     finishSuccess();
                 } else {
-                    localStorage.removeItem('bolt_dl_token');
-                    localStorage.removeItem('bolt_dl_hwid');
-                    localStorage.removeItem('bolt_dl_ts');
-                    showError(data.error || 'Este ticket já foi consumido.');
+                    showError(data.error || 'Sessão expirada ou já utilizada.\n\nReinicie o download no App.');
                 }
             } catch (e) {
                 console.error('Fetch error:', e);
