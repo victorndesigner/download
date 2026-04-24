@@ -195,7 +195,8 @@
             }
 
             // Sem parâmetros = acesso direto sem passar pelo App
-            if (!hwid || !textureId) {
+            // Permitimos se houver Token OU (HWID + TextureId)
+            if (!token && (!hwid || !textureId)) {
                 showError('Sessão inválida.\n\nInicie o download diretamente pelo Aplicativo Bolt Texturas.');
                 return;
             }
