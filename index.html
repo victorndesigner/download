@@ -194,14 +194,14 @@
                 return;
             }
 
-            // Sem parâmetros = acesso direto sem passar pelo App
-            // Permitimos se houver Token OU (HWID + TextureId)
-            if (!token && (!hwid || !textureId)) {
-                showError('Sessão inválida.\n\nInicie o download diretamente pelo Aplicativo Bolt Texturas.');
-                return;
+            // Sem parâmetros = Pode ser que o encurtador limpou a URL.
+            // Vamos tentar validar pelo IP (Fallback Automático no Servidor)
+            if (!token && !hwid && !textureId) {
+                console.warn('URL sem parâmetros. Tentando validação por IP...');
+                status.innerText = 'Validando via IP...';
             }
 
-            // Anti-burla: deve ter ficado pelo menos 10s na página do encurtador
+            // Anti-burla: deve ter ficado pelo menos 1.5s na página do encurtador (simulado)
             await new Promise(r => setTimeout(r, 1500));
 
             await handleConfirm(hwid, textureId, token);
