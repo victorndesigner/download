@@ -208,7 +208,7 @@
                 if (res.ok && data.success) {
                     finishSuccess();
                 } else {
-                    showError(data.error || 'Sessão expirada ou já utilizada.\n\nReinicie o download no App.');
+                    showError(data.error || 'Sessão expirada ou já utilizada. Reinicie o download no App (este processo deve ser feito pelo PC).');
                 }
             } catch (e) {
                 console.error('Fetch error:', e);
