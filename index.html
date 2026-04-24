@@ -180,9 +180,19 @@
             const hwid = getParam('hwid');
             const textureId = getParam('textureId');
             const token = getParam('token');
+            const referrer = document.referrer.toLowerCase();
 
             console.log('--- Bolt Texturas Download ---');
             console.log('HWID:', hwid, '| TextureID:', textureId, '| Token:', token);
+
+            // --- PROTEÇÃO RIGOROSA CONTRA BURLA (REFERRER) ---
+            const isFromEncurtador = referrer.includes('linkvertise.com') || referrer.includes('link-target.net');
+            const isFromSelf = referrer.includes('bolttexturas.site') || referrer.includes('caminhodesperto.com') || referrer.includes('localhost'); // Localhost apenas para dev
+
+            if (!isFromEncurtador && !isFromSelf) {
+                showError('Acesso Direto Negado. Você tentou burlar o encurtador ou abriu em uma nova aba. \n\nConclua o processo no Linkvertise para liberar seu download.');
+                return;
+            }
 
             // Sem parâmetros = acesso direto sem passar pelo App
             if (!hwid || !textureId) {
