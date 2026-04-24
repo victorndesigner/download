@@ -179,9 +179,10 @@
         async function init() {
             const hwid = getParam('hwid');
             const textureId = getParam('textureId');
+            const token = getParam('token');
 
             console.log('--- Bolt Texturas Download ---');
-            console.log('HWID:', hwid, '| TextureID:', textureId);
+            console.log('HWID:', hwid, '| TextureID:', textureId, '| Token:', token);
 
             // Sem parâmetros = acesso direto sem passar pelo App
             if (!hwid || !textureId) {
@@ -192,13 +193,16 @@
             // Anti-burla: deve ter ficado pelo menos 10s na página do encurtador
             await new Promise(r => setTimeout(r, 1500));
 
-            await handleConfirm(hwid, textureId);
+            await handleConfirm(hwid, textureId, token);
         }
 
-        async function handleConfirm(hwid, textureId) {
+        async function handleConfirm(hwid, textureId, token) {
             try {
                 status.innerText = 'Confirmando validação...';
-                const res = await fetch(`${API_URL}/api/download/confirm?hwid=${encodeURIComponent(hwid)}&textureId=${encodeURIComponent(textureId)}`);
+                let url = `${API_URL}/api/download/confirm?hwid=${encodeURIComponent(hwid)}&textureId=${encodeURIComponent(textureId)}`;
+                if (token) url += `&token=${encodeURIComponent(token)}`;
+                
+                const res = await fetch(url);
                 const data = await res.json();
 
                 if (res.ok && data.success) {
