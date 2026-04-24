@@ -232,9 +232,8 @@
         }
 
         function showError(msg) {
-            const debugInfo = `\n\nURL: ${window.location.href}\nParams: ${params.toString() || 'Nenhum'}`;
-            console.error('Erro:', msg, debugInfo);
-            loadingArea.innerHTML = `<div style="color: #ff4d4d; font-weight: 700; white-space: pre-wrap;">❌ ${msg}</div>`;
+            console.error('Erro:', msg);
+            loadingArea.innerHTML = `<div style="color: #ff4d4d; font-weight: 700; font-size: 13px; white-space: pre-wrap; line-height: 1.5;">❌ ${msg.replace(/\n\n/g, '\n')}</div>`;
             title.innerText = 'Falha no Download';
             desc.innerText = 'Não foi possível liberar o arquivo.';
         }
